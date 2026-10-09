@@ -1,0 +1,226 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F4ECDB">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Saída Vinhos">
+<title>Saída de Vinhos · Terrazza Duomo 21</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+:root{--bg:#F4ECDB;--surface:#FFFDF8;--line:#E7DCC3;--ink:#2A2118;--muted:#756853;--gold:#836624;--soft:#FAF4E6;--wine:#6E2433;--ok:#2E7D32}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:96px}
+header{position:sticky;top:0;z-index:30;background:rgba(244,236,219,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:12px 16px 10px;padding-top:max(12px,env(safe-area-inset-top))}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+h1{font-family:Georgia,serif;font-size:21px;font-weight:600}
+.sub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.sync{font-size:11px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:5px}
+.dot{width:9px;height:9px;border-radius:50%;background:#c9a227}.dot.on{background:var(--ok)}.dot.off{background:var(--wine)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px}
+.tabs button{border:0;background:none;font:inherit;font-weight:700;font-size:14px;padding:9px;border-radius:10px;color:var(--muted)}
+.tabs button.on{background:var(--ink);color:#fff}
+.shift{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px}
+.shift button{border:0;background:none;font:inherit;font-weight:700;font-size:15px;padding:9px;border-radius:10px;color:var(--muted)}
+.shift button.on{background:var(--gold);color:#fff}
+.shift small{display:block;font-weight:600;font-size:11px;opacity:.85}
+.search input{width:100%;margin-top:8px;border:1px solid var(--line);background:var(--surface);border-radius:30px;padding:11px 16px;font:inherit;font-size:14px;color:var(--ink)}
+.bar{display:flex;gap:8px;margin-top:8px;overflow-x:auto;scrollbar-width:none}.bar::-webkit-scrollbar{display:none}
+.chip{flex:none;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--line);padding:6px 12px;border-radius:20px}
+.chip.on{background:var(--gold);border-color:var(--gold);color:#fff}
+main{padding:6px 14px}
+.day{font-size:12px;color:var(--muted);font-weight:700;margin:10px 4px 0}
+.cat{font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--gold);margin:18px 4px 8px;display:flex;justify-content:space-between}
+.item{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 10px 10px 14px;margin-bottom:7px}
+.item.has{border-color:var(--gold);background:var(--soft)}
+.nm{flex:1;min-width:0}.pr{font-size:11px;color:var(--muted);font-weight:600}.n{font-size:15px;font-weight:700;line-height:1.25}
+.ctl{display:flex;align-items:center;gap:6px}
+.ctl button{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:24px;font-weight:600;color:var(--ink);line-height:1}
+.ctl .plus{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ctl button:disabled{opacity:.3}.ctl button:active{transform:scale(.92)}
+.q{min-width:30px;text-align:center;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}.q.z{color:#b9ad92;font-weight:600}
+footer{position:fixed;left:0;right:0;bottom:0;background:rgba(255,253,248,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center;z-index:30}
+.tot{flex:1;font-size:12px;color:var(--muted);font-weight:600}.tot b{display:block;font-size:20px;color:var(--ink)}
+.act{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;font:inherit;font-weight:700;font-size:13px;color:var(--ink)}
+.empty{text-align:center;color:var(--muted);padding:40px 10px}
+/* storico */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:9px}
+.card .d{font-weight:800;font-size:15px;text-transform:capitalize}
+.pills{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.pill{font-size:12px;font-weight:700;background:var(--soft);border:1px solid var(--line);border-radius:20px;padding:4px 10px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal.on{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom))}
+.sheet h2{font-family:Georgia,serif;font-size:20px;text-transform:capitalize}
+.sec{margin-top:16px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;color:var(--gold);display:flex;justify-content:space-between}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.row b{font-variant-numeric:tabular-nums}
+.log{font-size:12px;color:var(--muted);padding:5px 2px;border-bottom:1px dashed var(--line)}
+.btnrow{display:flex;gap:8px;margin-top:16px}.btnrow .act{flex:1}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:200}.toast.show{opacity:1}
+.who{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:14px;font:inherit;font-weight:700;font-size:15px;color:var(--ink);width:100%;margin-top:8px;text-align:left}
+.login{position:fixed;inset:0;z-index:300;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;padding-top:max(24px,env(safe-area-inset-top))}
+.login.on{display:flex}
+.login .lg{font-family:Georgia,serif;font-size:30px;font-weight:600;text-align:center}
+.login .ls{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-top:4px;text-align:center}
+.login .lq{margin:28px 0 14px;font-size:15px;color:var(--muted);font-weight:600}
+.login .names{width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px}
+.login .names button{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:17px 18px;font:inherit;font-size:18px;font-weight:700;color:var(--ink);text-align:left;display:flex;align-items:center;gap:14px}
+.login .names button:active{transform:scale(.97);background:var(--soft)}
+.login .av{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex:none}
+</style></head><body>
+<header>
+ <div class="top"><div><h1>Saída de Vinhos</h1><span class="sub">Duomo 21</span></div>
+ <div class="sync" onclick="showLogin()"><span class="dot" id="dot"></span><span id="who">—</span></div></div>
+ <div class="tabs"><button id="tabC" class="on" onclick="setView('conta')">🍷 Contagem</button><button id="tabS" onclick="setView('storico')">📋 Storico</button></div>
+ <div id="ctlHead">
+  <div class="shift"><button id="bG" onclick="setShift('giorno')">☀️ Giorno<small id="tG">0</small></button><button id="bN" onclick="setShift('notte')">🌙 Notte<small id="tN">0</small></button></div>
+  <div class="search"><input id="q" type="search" placeholder="Buscar garrafa ou produtor…" oninput="render()"></div>
+  <div class="bar" id="chips"></div>
+ </div>
+</header>
+<main id="list"></main>
+<footer id="foot">
+ <div class="tot"><span id="tl">Hoje</span><b id="tt">0</b></div>
+ <button class="act" onclick="copyToday()">Copiar resumo</button>
+</footer>
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="sheet" id="sheet"></div></div>
+<div class="login" id="login">
+ <div class="lg">Saída de Vinhos</div><div class="ls">Terrazza Duomo 21</div>
+ <div class="lq">Quem está usando?</div>
+ <div class="names" id="names"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const W=[["Spumante", "Ca' Del Bosco", "Annamaria Clementi"], ["Spumante", "Ca' Del Bosco", "Vintage Collection Satèn"], ["Spumante", "Ca' Del Bosco", "Vintage Collection Dosage Zero"], ["Spumante", "Ca' Del Bosco", "Cuvée Prestige Brut"], ["Spumante", "Ca' Del Bosco", "Cuvée Prestige Rosé ed."], ["Spumante", "Bellavista", "Cuvée Alma Brut"], ["Spumante", "Bellavista", "Cuvée Alma non Dosato"], ["Spumante", "Bellavista", "Satèn"], ["Spumante", "Bellavista", "Cuvée Alma Rosé"], ["Spumante", "Bellavista", "Vittorio Moretti"], ["Spumante", "Contadi Castaldi", "Brut"], ["Spumante", "Contadi Castaldi", "Rosé"], ["Spumante", "Ferrari", "Giulio Ferrari Riserva del Fondatore"], ["Spumante", "Ferrari", "Giulio Ferrari Riserva del Fondatore Rosé"], ["Spumante", "Ferrari", "Trento Doc Maximum Blanc de Blancs"], ["Spumante", "Biancavigna", "Prosecco DOCG"], ["Spumante", "Bottega", "DOC Brut Gold"], ["Spumante", "Bottega", "DOC Brut Rosé Gold"], ["Spumante", "Coppo", "Luigi Coppo Brut Alta Langa DOCG"], ["Spumante", "Coppo", "Luigi Coppo Pas Dosé Alta Langa DOCG"], ["Champagne", "Dom Pérignon", "Vintage 2017"], ["Champagne", "Dom Pérignon", "Vintage 2010 — Lady Gaga Ed."], ["Champagne", "Dom Pérignon", "P2 2004"], ["Champagne", "Dom Pérignon", "Rosé 2009"], ["Champagne", "Dom Pérignon", "Luminous 2015"], ["Champagne", "Dom Pérignon", "Luminous Rosé 2009"], ["Champagne", "Ruinart", "R de Ruinart"], ["Champagne", "Ruinart", "Blanc de Blancs"], ["Champagne", "Ruinart", "Rosé"], ["Champagne", "Krug", "Grande Cuvée 173ème"], ["Champagne", "Krug", "Rosé 29ème"], ["Champagne", "Moët & Chandon", "Impérial Réserve"], ["Champagne", "Moët & Chandon", "Impérial Réserve Rosé"], ["Champagne", "Veuve Clicquot", "Yellow Label Brut"], ["Champagne", "Veuve Clicquot", "Rosé"], ["Champagne", "Veuve Clicquot", "Rich"], ["Champagne", "Armand de Brignac", "Brut Gold (Ace of Spades)"], ["Champagne", "Armand de Brignac", "Blanc de Blancs"], ["Champagne", "Armand de Brignac", "Brut Rosé"], ["Champagne", "Armand de Brignac", "Blanc de Noirs 2015 · Magnum 1,5L"], ["Champagne", "Louis Roederer", "Cristal 2016"], ["Champagne", "Louis Roederer", "Cristal Rosé 2014"], ["Champagne", "Mumm", "RSRV Brut Cuvée 4.5"], ["Champagne", "Mumm", "RSRV Blanc de Blancs 2014"], ["Champagne", "Mumm", "RSRV Rosé"], ["Bianco", "Ca' Del Bosco", "Corte del Lupo Curtefranca Bianco"], ["Bianco", "Ornellaia", "Ornellaia Bianco 2022"], ["Bianco", "La Spinetta", "Derthona Timorasso DOC"], ["Bianco", "Gaja", "Gaja & Rey 2021"], ["Bianco", "Gaja", "Rossj-Bass DOC"], ["Bianco", "Coppo", "Costebianche DOC"], ["Bianco", "Coppo", "Monteriolo DOC"], ["Bianco", "Ceretto", "Blangè"], ["Bianco", "Tiefenbrunner", "Pinot Grigio"], ["Bianco", "Tiefenbrunner", "Chardonnay"], ["Bianco", "Cantina Terlano", "Gewürztraminer"], ["Bianco", "Cantina Terlano", "Pinot Bianco"], ["Bianco", "Venica", "Petris"], ["Bianco", "Venica", "Ronco delle Mele"], ["Bianco", "Jermann", "Dreams"], ["Bianco", "Jermann", "Vintage Tunina"], ["Bianco", "Jermann", "Vinnae"], ["Bianco", "Antinori · Castello della Sala", "Cervaro della Sala"], ["Bianco", "Antinori · Castello della Sala", "Conte della Vipera"], ["Bianco", "La Valentina", "Spelt Oro"], ["Bianco", "Guido Marsella", "Fiano di Avellino"], ["Bianco", "Donnafugata", "Anthìlia"], ["Bianco", "Pietradolce", "Etna Bianco"], ["Bianco", "Feudo Maccari", "Family and Friends"], ["Bianco", "Capichera", "VT Isola dei Nuraghi"], ["Bianco", "Capichera", "Capichera"], ["Bianco", "Albert Pic", "Chablis Saint-Pierre"], ["Bianco", "Louis Jadot", "Bourgogne Blanc"], ["Bianco", "Domaine de Ladoucette", "Baron de L'"], ["Bianco", "Domaine de Ladoucette", "De Ladoucette"], ["Bianco", "Von Winning", "Win Win Riesling Trocken Gutswein"], ["Bianco", "Cloudy Bay", "Sauvignon Blanc"], ["Rosato", "Frescobaldi", "Alìe"], ["Rosato", "Antinori", "Scalabrone Bolgheri Rosato DOC"], ["Rosato", "Château d'Esclans", "Whispering Angel Côtes de Provence"], ["Rosso", "Ca' Del Bosco", "Corte del Lupo Rosso"], ["Rosso", "Ca' Del Bosco", "Maurizio Zanella"], ["Rosso", "Ca' Del Bosco", "Merlot"], ["Rosso", "Ceretto", "Nebbiolo d'Alba DOC Bernardina"], ["Rosso", "Ceretto", "Dolcetto d'Alba DOC Rossana"], ["Rosso", "Ceretto", "Barbaresco DOCG"], ["Rosso", "Ceretto", "Barolo DOCG"], ["Rosso", "Gaja", "Barbaresco DOCG"], ["Rosso", "Gaja", "Barolo Dragomis DOCG"], ["Rosso", "Gaja", "Sito Moresco DOC"], ["Rosso", "La Spinetta", "Barbaresco Gallina DOCG"], ["Rosso", "La Spinetta", "Barbera d'Alba «Gallina»"], ["Rosso", "Sandrone", "Barolo Le Vigne DOCG 2019 · Magnum 1,5L"], ["Rosso", "Sandrone", "Nebbiolo d'Alba Valmaggiore DOC"], ["Rosso", "Sandrone", "Barbera d'Alba DOC"], ["Rosso", "Coppo", "Camp du Russ DOCG"], ["Rosso", "Coppo", "Pomorosso DOCG"], ["Rosso", "Masi", "Amarone Classico Costasera «Anno del Serpente»"], ["Rosso", "Tommasi", "Amarone della Valpolicella De Buris"], ["Rosso", "Elena Walch", "Lagrein Riserva Vigna Castel Ringberg"], ["Rosso", "Frescobaldi", "Chianti Classico DOCG Tenuta Perano"], ["Rosso", "Ornellaia", "Ornellaia 2015 «Il Carisma»"], ["Rosso", "Ornellaia", "Ornellaia 2020"], ["Rosso", "Ornellaia", "Le Volte dell'Ornellaia"], ["Rosso", "Ornellaia", "Le Serre Nuove dell'Ornellaia"], ["Rosso", "Masseto", "Masseto 2019"], ["Rosso", "Masseto", "Masseto 2022"], ["Rosso", "Masseto", "Massetino 2021"], ["Rosso", "Tenuta San Guido", "Sassicaia 2022"], ["Rosso", "Tenuta San Guido", "Sassicaia 2021"], ["Rosso", "Tenuta San Guido", "Sassicaia 2019"], ["Rosso", "Tenuta San Guido", "Sassicaia 2018"], ["Rosso", "Tenuta San Guido", "Guidalberto IGT"], ["Rosso", "Tenuta San Guido", "Le Difese IGT"], ["Rosso", "Tenuta Sette Ponti", "Sette 2020"], ["Rosso", "Tenuta Sette Ponti", "Orma IGT 2021"], ["Rosso", "Tenuta Sette Ponti", "Oreno 2021"], ["Rosso", "Biondi Santi", "Brunello di Montalcino Riserva DOCG 2013"], ["Rosso", "Biondi Santi", "Brunello di Montalcino Riserva DOCG 2012"], ["Rosso", "Gaja · Cà Marcanda", "Promis"], ["Rosso", "Antinori · Pian delle Vigne", "Brunello di Montalcino 2019"], ["Rosso", "Antinori", "Cigliano Chianti Classico DOCG 2021"], ["Rosso", "Antinori", "Il Bruciato"], ["Rosso", "Antinori", "Tignanello 2022"], ["Rosso", "Antinori", "Solaia 2020"], ["Rosso", "Antinori", "Guado al Tasso 2023"], ["Rosso", "Lamole di Lamole", "Chianti Classico Maggiolo"], ["Rosso", "Tenuta Sassoregale", "Maremma Toscana Sangiovese"], ["Rosso", "La Valentina", "Montepulciano d'Abruzzo Spelt"], ["Rosso", "Donnafugata", "Tancredi «ed. Dolce&Gabbana»"], ["Rosso", "Feudo Maccari", "Saia"], ["Rosso", "Pietradolce", "Etna Rosso"], ["Rosso", "Mesa", "Gavino"], ["Rosso", "Mesa", "Buio Buio"], ["Rosso", "Domaine Faiveley", "Gevrey-Chambertin Clos des Issarts Monopole"], ["Rosso", "Domaine Faiveley", "Nuits-Saint-Georges 1er Cru Les Porêts Saint Georges"], ["Rosso", "Louis Jadot", "Bourgogne Pinot Noir"], ["Rosso", "Altos Las Hormigas", "Malbec Reserva"], ["Rosso", "Cloudy Bay", "Pinot Noir"], ["Rosso", "De Loach", "Heritage Reserve"], ["Dolce", "La Spinetta", "Moscato d'Asti Biancospino"], ["Dolce", "Antinori · Castello della Sala", "Muffato della Sala · 0,375L"], ["Dolce", "Donnafugata", "Ben Ryé Passito di Pantelleria DOC · 0,375L"]];
+const ORDER=["Champagne","Spumante","Bianco","Rosato","Rosso","Dolce"];
+const CATLBL={Champagne:"Champagne",Spumante:"Espumantes",Bianco:"Brancos",Rosato:"Rosés",Rosso:"Tintos",Dolce:"Doces"};
+const CATS=[["Todas","Todas"]].concat(ORDER.map(c=>[c,CATLBL[c]]));
+const slug=w=>(w[1]+"__"+w[2]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
+const BYSLUG={};W.forEach(w=>BYSLUG[slug(w)]=w);
+const full=w=>w[1]+" "+w[2];
+let shift="giorno",cat="Todas",view="conta",user="",DAY="";
+let counts={giorno:{},notte:{}};   // do dia atual
+let ref=null,online=false,usingLocal=false;
+const DN=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+const MN=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+/* dia operacional: antes das 04:00 ainda pertence ao dia anterior (igual ao App Tavolo) */
+function bizDay(d){d=d||new Date();const x=new Date(d);if(x.getHours()<4)x.setDate(x.getDate()-1);return x}
+const dkey=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const dlabel=k=>{const [y,m,d]=k.split("-").map(Number);const x=new Date(y,m-1,d);return DN[x.getDay()]+" "+d+" "+MN[m-1]+" "+y};
+const hhmm=t=>{const d=new Date(t);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")};
+const tot=o=>Object.values(o||{}).reduce((a,b)=>a+(b||0),0);
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+
+/* ---------- Firebase ---------- */
+const CFG={apiKey:"AIzaSyB2T7b209i4uNvujtLniSPP1CDq4_jT_-Y",authDomain:"terrazzaduomo21.firebaseapp.com",databaseURL:"https://terrazzaduomo21-default-rtdb.europe-west1.firebasedatabase.app",projectId:"terrazzaduomo21",storageBucket:"terrazzaduomo21.firebasestorage.app",messagingSenderId:"546065843894",appId:"1:546065843894:web:306db88b216bae088f4817"};
+let DB=null,dayRef=null;
+function initFB(){
+ try{firebase.initializeApp(CFG);DB=firebase.database();ref=DB.ref("vinhos");}catch(e){usingLocal=true;return}
+ DB.ref(".info/connected").on("value",s=>{online=!!s.val();setDot()});
+ attachDay();
+}
+function attachDay(){
+ if(!DB)return;
+ if(dayRef)dayRef.off();
+ DAY=dkey(bizDay());
+ dayRef=ref.child("dias/"+DAY+"/cont");
+ dayRef.on("value",s=>{const v=s.val()||{};counts={giorno:v.giorno||{},notte:v.notte||{}};try{localStorage.setItem("vn:"+DAY,JSON.stringify(counts))}catch(e){}if(view==="conta")render()},e=>{usingLocal=true;toast("Sem permissão no Firebase")});
+}
+function setDot(){const d=document.getElementById('dot');d.className="dot "+(online?"on":"off")}
+/* troca de dia operacional com o app aberto */
+setInterval(()=>{if(DB&&dkey(bizDay())!==DAY){attachDay()}},60000);
+
+/* ---------- Login ---------- */
+const USERS=["Andrea","Karen","Francesco","Johnny","Luccas"];
+function loadUser(){try{user=localStorage.getItem("vn_user")||""}catch(e){}if(!USERS.includes(user))user="";document.getElementById('who').textContent=user||"entrar"}
+function showLogin(){
+ document.getElementById('names').innerHTML=USERS.map(n=>`<button onclick="login('${n}')"><span class="av">${n[0]}</span>${n}</button>`).join("");
+ document.getElementById('login').classList.add('on')}
+function login(n){user=n;try{localStorage.setItem("vn_user",n)}catch(e){}
+ document.getElementById('who').textContent=n;document.getElementById('login').classList.remove('on');toast("Olá, "+n)}
+
+/* ---------- Contagem ---------- */
+function chg(sl,d){
+ if(!DB){toast("Sem conexão com Firebase");return}
+ const w=BYSLUG[sl];if(!w)return;
+ const cur=(counts[shift]||{})[sl]||0;
+ if(d<0&&cur<=0)return;
+ const now=Date.now(),sh=shift,day=DAY;
+ ref.child("dias/"+day+"/cont/"+sh+"/"+sl).transaction(v=>{v=v||0;const n=v+d;return n<0?0:n},(err,ok,snap)=>{
+  if(err||!ok){toast("Erro ao salvar");return}
+  ref.child("dias/"+day+"/log").push({t:now,s:sh,k:sl,nm:full(w),d:d,by:user||""});
+ });
+ /* otimista: atualiza na hora */
+ counts[sh][sl]=Math.max(0,cur+d);if(!counts[sh][sl])delete counts[sh][sl];render();
+}
+function setView(v){view=v;document.getElementById('tabC').classList.toggle('on',v==="conta");document.getElementById('tabS').classList.toggle('on',v==="storico");
+ document.getElementById('ctlHead').style.display=v==="conta"?"block":"none";document.getElementById('foot').style.display=v==="conta"?"flex":"none";
+ v==="conta"?render():renderStorico()}
+function setShift(s){shift=s;render()}
+function render(){
+ if(view!=="conta")return;
+ document.getElementById('chips').innerHTML=CATS.map(c=>`<span class="chip${cat===c[0]?' on':''}" onclick="cat='${c[0]}';render()">${c[1]}</span>`).join("");
+ const t=document.getElementById('q').value.trim().toLowerCase(),c=counts[shift]||{};let h=`<div class="day">${dlabel(DAY||dkey(bizDay()))}</div>`;
+ for(const ct of ORDER){
+  if(cat!=="Todas"&&cat!==ct)continue;
+  const items=W.filter(w=>w[0]===ct&&(!t||full(w).toLowerCase().includes(t)));
+  if(!items.length)continue;
+  const sub=items.reduce((a,w)=>a+(c[slug(w)]||0),0);
+  h+=`<div class="cat"><span>${CATLBL[ct]}</span><span>${sub||""}</span></div>`;
+  for(const w of items){const k=slug(w),v=c[k]||0;
+   h+=`<div class="item${v?' has':''}"><div class="nm"><div class="pr">${w[1]}</div><div class="n">${w[2]}</div></div>
+   <div class="ctl"><button ${v?'':'disabled'} onclick="chg('${k}',-1)">−</button><span class="q${v?'':' z'}">${v}</span><button class="plus" onclick="chg('${k}',1)">+</button></div></div>`}
+ }
+ document.getElementById('list').innerHTML=h;
+ document.getElementById('tG').textContent=tot(counts.giorno);document.getElementById('tN').textContent=tot(counts.notte);
+ document.getElementById('bG').classList.toggle('on',shift==="giorno");document.getElementById('bN').classList.toggle('on',shift==="notte");
+ document.getElementById('tt').textContent=tot(counts.giorno)+tot(counts.notte);
+ document.getElementById('tl').textContent="Total do dia · garrafas";
+}
+function summaryText(day,cont){
+ let out="🍷 Saída de vinhos · "+dlabel(day);
+ for(const s of["giorno","notte"]){
+  const c=(cont||{})[s]||{};const rows=Object.keys(c).filter(k=>c[k]>0).map(k=>[BYSLUG[k]?full(BYSLUG[k]):k,c[k]]);
+  out+="\n\n"+(s==="giorno"?"☀️ GIORNO":"🌙 NOTTE")+" — "+tot(c)+" garrafas";
+  rows.forEach(r=>out+="\n"+r[1]+"x "+r[0]);
+ }
+ out+="\n\nTOTAL DO DIA: "+(tot((cont||{}).giorno)+tot((cont||{}).notte));return out}
+function copyText(txt){(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Resumo copiado")).catch(()=>prompt("Copie o resumo:",txt))}
+function copyToday(){copyText(summaryText(DAY,counts))}
+
+/* ---------- Storico ---------- */
+function renderStorico(){
+ document.getElementById('list').innerHTML='<div class="empty">Carregando…</div>';
+ if(!DB){document.getElementById('list').innerHTML='<div class="empty">Sem conexão.</div>';return}
+ ref.child("dias").orderByKey().limitToLast(90).once("value").then(s=>{
+  const v=s.val()||{};const keys=Object.keys(v).sort().reverse().filter(k=>{const c=v[k].cont||{};return tot(c.giorno)+tot(c.notte)>0});
+  window._dias=v;
+  if(!keys.length){document.getElementById('list').innerHTML='<div class="empty">Nenhum dia registrado ainda.</div>';return}
+  document.getElementById('list').innerHTML=keys.map(k=>{const c=v[k].cont||{},g=tot(c.giorno),n=tot(c.notte);
+   return `<div class="card" onclick="openDay('${k}')"><div class="d">${dlabel(k)}</div><div class="pills"><span class="pill">🍾 ${g+n}</span><span class="pill">☀️ ${g}</span><span class="pill">🌙 ${n}</span></div></div>`}).join("");
+ }).catch(()=>{document.getElementById('list').innerHTML='<div class="empty">Sem permissão para ler o histórico.</div>'});
+}
+function openDay(k){
+ const d=(window._dias||{})[k]||{},c=d.cont||{};
+ let h=`<h2>${dlabel(k)}</h2><div class="pills"><span class="pill">🍾 ${tot(c.giorno)+tot(c.notte)} garrafas</span></div>`;
+ for(const s of["giorno","notte"]){
+  const o=c[s]||{},ks=Object.keys(o).filter(x=>o[x]>0);
+  h+=`<div class="sec"><span>${s==="giorno"?"☀️ Giorno":"🌙 Notte"}</span><span>${tot(o)}</span></div>`;
+  h+=ks.length?ks.sort((a,b)=>o[b]-o[a]).map(x=>`<div class="row"><span>${BYSLUG[x]?full(BYSLUG[x]):x}</span><b>${o[x]}</b></div>`).join(""):'<div class="log">Nada registrado.</div>';
+ }
+ const log=Object.values(d.log||{}).sort((a,b)=>a.t-b.t);
+ if(log.length){h+=`<div class="sec"><span>Registro de horários</span><span>${log.length}</span></div>`+log.map(l=>`<div class="log">${hhmm(l.t)} · ${l.s==="giorno"?"☀️":"🌙"} ${l.d>0?"+1":"−1"} ${l.nm}${l.by?" · "+l.by:""}</div>`).join("")}
+ h+=`<div class="btnrow"><button class="act" onclick="copyText(summaryText('${k}',window._dias['${k}'].cont))">Copiar resumo</button><button class="act" onclick="closeModal()">Fechar</button></div>`;
+ openModal(h);
+}
+function openModal(h){document.getElementById('sheet').innerHTML=h;document.getElementById('modal').classList.add('on')}
+function closeModal(){document.getElementById('modal').classList.remove('on')}
+
+/* ---------- start ---------- */
+loadUser();DAY=dkey(bizDay());
+try{counts=JSON.parse(localStorage.getItem("vn:"+DAY)||"null")||counts}catch(e){}
+render();
+if(!user)showLogin();
+window.addEventListener("load",initFB);
+</script></body></html>
